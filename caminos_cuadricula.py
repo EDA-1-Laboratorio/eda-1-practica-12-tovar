@@ -86,7 +86,16 @@ def caminos_recursivo(m: int, n: int) -> int:
     #   Aplica la fórmula:  caminos(m, n) = caminos(m-1, n) + caminos(m, n-1)
     #   Es una sola línea de código.
 
-    pass  # TODO
+    # PASO 1 – Casos base.
+    # Con una sola fila o columna, el robot no tiene elección de dirección:
+    # en la fila 0 solo puede ir a la derecha; en la columna 0 solo hacia abajo.
+    if m == 1 or n == 1:
+        return 1
+
+    # PASO 2 – Caso recursivo.
+    # "Quitamos" una fila (llegamos por arriba) o una columna (llegamos por la izquierda)
+    # y sumamos los caminos de ambas cuadrículas más pequeñas.
+    return caminos_recursivo(m - 1, n) + caminos_recursivo(m, n - 1)
 
 
 def caminos_memo(m: int, n: int, memo: dict = None) -> int:
@@ -108,9 +117,21 @@ def caminos_memo(m: int, n: int, memo: dict = None) -> int:
             3. Revisa caché: if (m, n) in memo → return memo[(m, n)]
             4. Calcula recursivamente, guarda en memo[(m, n)], devuelve.
     """
-    # Sigue los cuatro pasos descritos arriba.
+    # Paso 1 – Inicializa el diccionario en la primera llamada.
+    if memo is None:
+        memo = {}
 
-    pass  # TODO
+    # Paso 2 – Casos base: una sola fila o columna → un único camino.
+    if m == 1 or n == 1:
+        return 1
+
+    # Paso 3 – Consulta la caché antes de recalcular.
+    if (m, n) in memo:
+        return memo[(m, n)]
+
+    # Paso 4 – Calcula, guarda y devuelve.
+    memo[(m, n)] = caminos_memo(m - 1, n, memo) + caminos_memo(m, n - 1, memo)
+    return memo[(m, n)]
 
 
 def caminos_bottom_up(m: int, n: int) -> tuple:
@@ -141,19 +162,24 @@ def caminos_bottom_up(m: int, n: int) -> tuple:
         Al terminar, la respuesta está en tabla[m-1][n-1].
     """
     # PASO 1 – Crea la tabla de m filas × n columnas llena de ceros.
-    #   tabla = [[0] * n for _ in range(m)]
+    tabla = [[0] * n for _ in range(m)]
 
-    # PASO 2 – Inicializa la primera fila.
-    #   for j in range(n): tabla[0][j] = 1
+    # PASO 2 – Primera fila: el robot solo puede llegar moviéndose a la derecha → 1 camino.
+    for j in range(n):
+        tabla[0][j] = 1
 
-    # PASO 3 – Inicializa la primera columna.
-    #   for i in range(m): tabla[i][0] = 1
+    # PASO 3 – Primera columna: el robot solo puede llegar moviéndose hacia abajo → 1 camino.
+    for i in range(m):
+        tabla[i][0] = 1
 
-    # PASO 4 – Doble bucle de llenado (empieza en i=1, j=1).
+    # PASO 4 – Doble bucle de llenado.
+    # tabla[i-1][j] y tabla[i][j-1] ya están calculados porque i-1 < i y j-1 < j.
+    for i in range(1, m):
+        for j in range(1, n):
+            tabla[i][j] = tabla[i - 1][j] + tabla[i][j - 1]
 
-    # PASO 5 – Devuelve (tabla[m-1][n-1], tabla).
-
-    pass  # TODO  ← cuando implementes, cambia el return a (tabla[m-1][n-1], tabla)
+    # PASO 5 – La esquina inferior-derecha contiene la respuesta.
+    return (tabla[m - 1][n - 1], tabla)
 
 
 def imprimir_tabla(tabla: list, titulo: str = "Tabla DP") -> None:
@@ -175,15 +201,16 @@ def imprimir_tabla(tabla: list, titulo: str = "Tabla DP") -> None:
         Luego recorre fila por fila e imprime cada valor con ese ancho:
             print(" ".join(str(val).rjust(ancho) for val in fila))
     """
-    # PASO 1 – Encuentra el valor máximo en toda la tabla.
-    #   max_val = max(max(fila) for fila in tabla)
-    #   ancho   = len(str(max_val)) + 1   (+ 1 para separación)
+    # PASO 1 – Ancho de columna basado en el número más grande de la tabla.
+    max_val = max(max(fila) for fila in tabla)
+    ancho = len(str(max_val)) + 1   # +1 para separación entre columnas
 
-    # PASO 2 – Imprime el título.
+    # PASO 2 – Título.
+    print(f"  {titulo}:")
 
-    # PASO 3 – Recorre las filas e imprime cada valor con rjust(ancho).
-
-    pass  # TODO
+    # PASO 3 – Imprime cada fila con valores alineados a la derecha.
+    for fila in tabla:
+        print(" ".join(str(val).rjust(ancho) for val in fila))
 
 
 # ============================================================
@@ -233,23 +260,36 @@ def caminos_con_obstaculos(grid: list) -> int:
         Caso especial: si la celda de inicio (0,0) o la de destino
         (m-1, n-1) está bloqueada, el resultado es 0 directamente.
     """
-    # PASO 1 – Verifica si el inicio o el destino están bloqueados.
-    #   m, n = len(grid), len(grid[0])
-    #   if grid[0][0] == 1 or grid[m-1][n-1] == 1: return 0
+    # PASO 1 – Caso especial: inicio o destino bloqueados.
+    m, n = len(grid), len(grid[0])
+    if grid[0][0] == 1 or grid[m - 1][n - 1] == 1:
+        return 0
 
-    # PASO 2 – Crea la tabla de ceros.
+    # PASO 2 – Tabla de ceros.
+    tabla = [[0] * n for _ in range(m)]
 
-    # PASO 3 – Inicializa la primera fila considerando obstáculos.
-    #   Usa un bucle con break en cuanto encuentres un obstáculo.
+    # PASO 3 – Primera fila: un obstáculo bloquea esa celda y todas las siguientes.
+    for j in range(n):
+        if grid[0][j] == 1:
+            break           # Las celdas restantes de la fila quedan en 0.
+        tabla[0][j] = 1
 
-    # PASO 4 – Inicializa la primera columna considerando obstáculos.
+    # PASO 4 – Primera columna: igual, pero recorriendo por filas.
+    for i in range(m):
+        if grid[i][0] == 1:
+            break
+        tabla[i][0] = 1
 
-    # PASO 5 – Llena el interior (doble bucle desde i=1, j=1).
-    #   Aplica la MODIFICACIÓN 2 descrita arriba.
+    # PASO 5 – Interior: 0 si hay obstáculo, suma de vecinos si está libre.
+    for i in range(1, m):
+        for j in range(1, n):
+            if grid[i][j] == 1:
+                tabla[i][j] = 0
+            else:
+                tabla[i][j] = tabla[i - 1][j] + tabla[i][j - 1]
 
-    # PASO 6 – Retorna tabla[m-1][n-1].
-
-    pass  # TODO
+    # PASO 6 – Resultado en la esquina inferior-derecha.
+    return tabla[m - 1][n - 1]
 
 
 # ============================================================
